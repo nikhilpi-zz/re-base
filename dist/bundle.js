@@ -261,7 +261,13 @@ return /******/ (function(modules) { // webpackBootstrap
 	    var ref = new Firebase(baseUrl + '/' + endpoint);
 	    _firebaseRefsMixin(endpoint, 'syncState', ref);
 	    _addListener(endpoint, 'syncState', options, ref);
-	    options.context.setState = function (data, cb) {
+
+	    if (!_sync.setStates) {
+	      _sync.setStates = [];
+	    }
+
+	    // Record all of our methods to handle the keys that need syncing
+	    _sync.setStates.push(function (data, cb) {
 	      for (var key in data) {
 	        if (data.hasOwnProperty(key)) {
 	          if (key === options.state) {
@@ -271,7 +277,15 @@ return /******/ (function(modules) { // webpackBootstrap
 	          }
 	        }
 	      }
+	    });
+
+	    // Make sure the replaced method calls all of them
+	    options.context.setState = function (data, cb) {
+	      _sync.setStates.forEach(function (f) {
+	        f(data, cb);
+	      });
 	    };
+
 	    return _returnRef(endpoint, 'syncState');
 	  };
 
